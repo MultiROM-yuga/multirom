@@ -50,47 +50,81 @@ if [ rd_cmpr == -1 ] || [ ! -f /tmp/boot/init ] ; then
     return 1
 fi
 
-# Extract ramdisk.cpio
-mkdir /tmp/boot/sbin/rd
-cd /tmp/boot/sbin/rd && cat ../ramdisk.cpio | cpio -i;cd /
+if [ -d /tmp/boot/sbin/ramdisk.cpio ]; then
+USE_COMBINED_RAMDISK=true
+fi
+
+if [ "$USE_COMBINED_RAMDISK" = "true" ]; then
+    # Extract ramdisk.cpio
+    mkdir /tmp/boot/sbin/rd
+    cd /tmp/boot/sbin/rd && cat ../ramdisk.cpio | cpio -i;cd /
+fi
 
 # copy trampoline
-if [ ! -e /tmp/boot/sbin/rd/main_init ] ; then
-    mv /tmp/boot/sbin/rd/init /tmp/boot/sbin/rd/main_init
+if [ "$USE_COMBINED_RAMDISK" = "true" ]; then
+    if [ ! -e /tmp/boot/sbin/rd/main_init ] ; then
+        mv /tmp/boot/sbin/rd/init /tmp/boot/sbin/rd/main_init
+    fi
+    cp /tmp/multirom/trampoline /tmp/boot/sbin/rd/init
+    chmod 750 /tmp/boot/sbin/rd/init
+else
+    if [ ! -e /tmp/boot/main_init ] ; then
+        mv /tmp/boot/init /tmp/boot/main_init
+    fi
+    cp /tmp/multirom/trampoline /tmp/boot/init
+    chmod 750 /tmp/boot/init
 fi
-cp /tmp/multirom/trampoline /tmp/boot/sbin/rd/init
-chmod 750 /tmp/boot/sbin/rd/init
 
 # create ueventd and watchdogd symlink
 # older versions were changing these to ../main_init, we need to change it back
-if [ -L /tmp/boot/sbin/rd/sbin/ueventd ] ; then
-    ln -sf ../init /tmp/boot/sbin/rd/sbin/ueventd
-fi
-if [ -L /tmp/boot/sbin/rd/sbin/watchdogd ] ; then
-    ln -sf ../init /tmp/boot/sbin/rd/sbin/watchdogd
+if [ "$USE_COMBINED_RAMDISK" = "true" ]; then
+    if [ -L /tmp/boot/sbin/rd/sbin/ueventd ] ; then
+        ln -sf ../init /tmp/boot/sbin/rd/sbin/ueventd
+    fi
+    if [ -L /tmp/boot/sbin/rd/sbin/watchdogd ] ; then
+        ln -sf ../init /tmp/boot/sbin/rd/sbin/watchdogd
+    fi
+else
+    if [ -L /tmp/boot/sbin/ueventd ] ; then
+        ln -sf ../init /tmp/boot/sbin/ueventd
+    fi
+    if [ -L /tmp/boot/sbin/watchdogd ] ; then
+        ln -sf ../init /tmp/boot/sbin/watchdogd
+    fi
 fi
 
 # copy MultiROM's fstab if needed, remove old one if disabled
-if [ "$USE_MROM_FSTAB" == "true" ]; then
-    echo "Using MultiROM's fstab"
-    cp /tmp/multirom/mrom.fstab /tmp/boot/sbin/rd/mrom.fstab
-elif [ -e /tmp/boot/sbin/rd/mrom.fstab ] ; then
-    rm /tmp/boot/sbin/rd/mrom.fstab
+if [ "$USE_COMBINED_RAMDISK" = "true" ]; then
+    if [ "$USE_MROM_FSTAB" == "true" ]; then
+        echo "Using MultiROM's fstab"
+        cp /tmp/multirom/mrom.fstab /tmp/boot/sbin/rd/mrom.fstab
+    elif [ -e /tmp/boot/sbin/rd/mrom.fstab ] ; then
+        rm /tmp/boot/sbin/rd/mrom.fstab
+    fi
+else
+    if [ "$USE_MROM_FSTAB" == "true" ]; then
+        echo "Using MultiROM's fstab"
+        cp /tmp/multirom/mrom.fstab /tmp/boot/mrom.fstab
+    elif [ -e /tmp/boot/mrom.fstab ] ; then
+        rm /tmp/boot/mrom.fstab
+    fi
 fi
 
 # pack the image again
-cd /tmp/boot/sbin/rd && find . | cpio -o -H newc > ../ramdisk.cpio
-rm -rf /tmp/boot/sbin/rd
-cd /tmp/boot
+if [ "$USE_COMBINED_RAMDISK" = "true" ]; then
+    cd /tmp/boot/sbin/rd && find . | cpio -o -H newc > ../ramdisk.cpio
+    rm -rf /tmp/boot/sbin/rd
+    cd /tmp/boot
 
-# replace recovery ramdisk
-rm /tmp/boot/sbin/ramdisk-recovery.cpio
-cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
+    # replace recovery ramdisk
+    rm /tmp/boot/sbin/ramdisk-recovery.cpio
+    cp /tmp/multirom/ramdisk-recovery.cpio /tmp/boot/sbin/
 
-# replace extract_elf_ramdisk tool to fix FOTA loading issues
-rm /tmp/boot/sbin/extract_elf_ramdisk
-cp /tmp/multirom/extract_elf_ramdisk /tmp/boot/sbin/
-chmod +x /tmp/boot/sbin/extract_elf_ramdisk
+    # replace extract_elf_ramdisk tool to fix FOTA loading issues
+    rm /tmp/boot/sbin/extract_elf_ramdisk
+    cp /tmp/multirom/extract_elf_ramdisk /tmp/boot/sbin/
+    chmod +x /tmp/boot/sbin/extract_elf_ramdisk
+fi
 
 case $rd_cmpr in
     CMPR_GZIP)
