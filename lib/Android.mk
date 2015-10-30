@@ -98,7 +98,6 @@ LOCAL_ARM_MODE := arm
 LOCAL_SRC_FILES:= \
     src/base/ftbbox.c \
     src/base/ftbitmap.c \
-    src/base/ftfntfmt.c \
     src/base/ftfstype.c \
     src/base/ftglyph.c \
     src/base/ftlcdfil.c \
