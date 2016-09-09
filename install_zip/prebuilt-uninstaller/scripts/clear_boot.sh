@@ -39,7 +39,7 @@ case "$magic" in
         ;;
 esac
 
-if [ rd_cmpr == -1 ] || [ ! -f /tmp/boot/init ] ; then
+if [ rd_cmpr == -1 ] || [ ! -e /tmp/boot/init -a ! -L /tmp/boot/init ] ; then
     echo "Failed to extract ramdisk!"
     return 1
 fi
