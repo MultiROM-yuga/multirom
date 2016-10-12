@@ -46,8 +46,13 @@ fi
 
 # restore init
 if [ -e /tmp/boot/main_init ] ; then
-    rm /tmp/boot/init
-    mv /tmp/boot/main_init /tmp/boot/init
+    if [ -e /tmp/boot/init.real ] ; then
+        rm /tmp/boot/init.real
+        mv /tmp/boot/main_init /tmp/boot/init.real
+    else
+        rm /tmp/boot/init
+        mv /tmp/boot/main_init /tmp/boot/init
+    fi
 fi
 
 chmod 750 /tmp/boot/init
