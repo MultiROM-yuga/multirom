@@ -25,7 +25,7 @@ LOCAL_SRC_FILES:= \
 
 # With these, GCC optimizes aggressively enough so full-screen alpha blending
 # is quick enough to be done in an animation
-LOCAL_CFLAGS += -O3 -funsafe-math-optimizations
+LOCAL_CFLAGS += -O3 -funsafe-math-optimizations -std=c11
 
 #LOCAL_CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector-all -O0 -g -fno-omit-frame-pointer -Wall
 
